@@ -1,4 +1,5 @@
 import pygame
+from pygame.locals import *
 import random
 import math
 
@@ -116,8 +117,12 @@ def main():
     my_font = pygame.font.SysFont('Verdana', 30)
     for row in range(9):
         for col in range(9):
-            matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
-            screen.blit(matrixNum, (row*50+100,col*50+10))
+            if (str(matrix.matrix[row][col]) == ""):
+                inputRect = Rect(row*50+100, col*50+10, 40, 40)
+                pygame.draw.rect(screen, (255,255,255), inputRect)
+            else:
+                matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
+                screen.blit(matrixNum, (row*50+110,col*50+10))
     pygame.display.flip()
 
 
