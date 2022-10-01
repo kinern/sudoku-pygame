@@ -119,7 +119,7 @@ def main():
     alertBoxCollection = []
 
     class InputBox():
-        def __init__(self, pos, font, matrixIndex, bgColor=(255,255,255), fontColor=(0,0,0)):
+        def __init__(self, pos, font, matrixIndex, bgColor=(255,255,255), fontColor=(80,80,80)):
             self.x, self.y = pos
             self.value = ""
             self.selected = False
@@ -213,7 +213,7 @@ def main():
                     #inputRect = Rect(row*50+100, col*50+10, 40, 40)
                     #pygame.draw.rect(screen, (255,255,255), inputRect)
                     newInputBox = InputBox(
-                        pos=(row*50+100, col*50+10),
+                        pos=(row*50+100, col*50+20),
                         font=30,
                         matrixIndex=[row,col],
                     )
@@ -221,7 +221,7 @@ def main():
                     inputBoxCollection.append(newInputBox)
                 else:
                     matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
-                    screen.blit(matrixNum, (row*50+110,col*50+10))
+                    screen.blit(matrixNum, (row*50+110,col*50+20))
     
     #Existing matrix
     def renderMatrix():
@@ -229,7 +229,7 @@ def main():
             for col in range(9):
                 if (str(matrix.matrix[row][col]) != ""):
                     matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
-                    screen.blit(matrixNum, (row*50+110,col*50+10))
+                    screen.blit(matrixNum, (row*50+110,col*50+20))
         for m in inputBoxCollection:
             m.show()
 
@@ -286,8 +286,19 @@ def main():
         bgColor=(255,255,255), 
         fontColor=(80,80,80)
     )
+
+    noHintsAlert = AlertBox(
+        pos=(int(screen_width/2)-int(300/2),int(screen_height/2)-int(120/2)), 
+        text="No Hints Left", 
+        size=(300,120), 
+        fontSize=40, 
+        bgColor=(255,255,255), 
+        fontColor=(80,80,80)
+    )
+
     alertBoxCollection.append(loseAlert)
     alertBoxCollection.append(winAlert)
+    alertBoxCollection.append(noHintsAlert)
 
     def hideAlerts():
         for n in alertBoxCollection:
@@ -324,12 +335,20 @@ def main():
             if (str(curInput.value) != solutionValue):
                 found = True
                 inputBoxCollection[i].value = solutionValue
+                clearBgColors()
+                inputBoxCollection[i].bgColor = inputBoxCollection[i].selectedBgColor
                 inputBoxCollection[i].update()
                 i = len(inputBoxCollection)
             i = i + 1 
         if (not found):
-            print("No fixable values found")
+            hideAlerts()
+            noHintsAlert.show()
         renderScreen()
+
+    def clearBgColors():
+        for n in inputBoxCollection:
+            n.bgColor = n.inactiveBgColor
+            n.update()
         
     
     newGameButton = Button(
