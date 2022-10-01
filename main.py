@@ -15,8 +15,8 @@ class SudokuMatrix(object):
 
     def generateMatrix(self):
         self.fillDiagonalSubmatrixes()
-        self.fillMissingSubMatrixes(0, self.sqrt)
-        #self.addMissingSquares()
+        self.fillMissingSubMatrixes()
+        self.addMissingSquares()
         print(self.matrix)
     
     def fillDiagonalSubmatrixes(self):
@@ -30,9 +30,8 @@ class SudokuMatrix(object):
             cellIndex = random.randrange(0,rangeMax)
             subMatrixIndex = int(cellIndex / self.size)
             subMatrixMod = int(cellIndex % self.size)
-            remove = random.randrange(0, 5)
-            if ((remove == 0) and (self.matrix[subMatrixIndex][subMatrixMod] != 0)):
-                self.matrix[subMatrixIndex][subMatrixMod] = 0
+            if ((self.matrix[subMatrixIndex][subMatrixMod] != "")):
+                self.matrix[subMatrixIndex][subMatrixMod] = ""
                 left = left - 1
 
     def fillSubMatrix(self, row, col):
@@ -45,9 +44,10 @@ class SudokuMatrix(object):
 
 
     def checkIfPlaceable(self, row, col, num):
-        return (self.unusedInRow(row, num) and
+        check = (self.unusedInRow(row, num) and
                 self.unusedInCol(col, num) and
                 self.unusedInBox(row-int(row % self.sqrt), col-int(col % self.sqrt), num))
+        return check
     
     def unusedInRow(self, row, num):
         for j in range(0, self.size):
@@ -68,32 +68,31 @@ class SudokuMatrix(object):
                     return False
         return True
 
+    def hasEmptySquare(self, l):
+        for row in range(self.size):
+            for col in range(self.size):
+                if(self.matrix[row][col] == 0):
+                    l[0]= row
+                    l[1]= col
+                    return True
+        return False
 
-    def fillMissingSubMatrixes(self, row, col):
-        print("row, col",str(row)+","+str(col))
-        #Exit out of recursion if row is larger than matrix size
-        if (row == self.size):
+
+    def fillMissingSubMatrixes(self):
+        l = [0, 0]
+        if(self.hasEmptySquare(l) == False):
             return True
         else:
-            #If at the end of the column and not the last row, recursively call next row
-            if (row < self.size and col == self.size):
-                self.fillMissingSubMatrixes(row+1, 0)
-            else:
-                #Check if cell is not filled yet
-                if (self.matrix[row][col] == 0):
-                    for num in range(1,10):
-                        print("check:,"+str(row)+str(col)+str(num))
-                        if (self.checkIfPlaceable(row, col, num)):
-                            print("found")
-                            #Check and add number
-                            self.matrix[row][col] = num
-                            self.fillMissingSubMatrixes(row, col+1)
-                            return True
-                    if (self.matrix[row][col] == 0):
-                        self.matrix[row][col] = "X"
-                
-                #matrix cell is now (or already) filled, increment column
-                self.fillMissingSubMatrixes(row, col+1)
+            row = l[0]
+            col = l[1]
+            for num in range(1, self.size+1):
+                if(self.checkIfPlaceable(row, col, num)):
+                    self.matrix[row][col]= num
+                    if(self.fillMissingSubMatrixes()):
+                        return True
+                    self.matrix[row][col] = 0      
+            return False
+
 
 
 def main():
@@ -110,7 +109,7 @@ def main():
     screen.fill(bgColor)
 
 
-    matrix = SudokuMatrix(9, 0)
+    matrix = SudokuMatrix(9, 54)
     matrix.generateMatrix()
 
     pygame.font.init() 
