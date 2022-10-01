@@ -28,8 +28,8 @@ class SudokuMatrix(object):
         while (left > 0):
             rangeMax = int(self.size*self.size)
             cellIndex = random.randrange(0,rangeMax)
-            subMatrixIndex = int(cellIndex / 9)
-            subMatrixMod = int(cellIndex % 9)
+            subMatrixIndex = int(cellIndex / self.size)
+            subMatrixMod = int(cellIndex % self.size)
             remove = random.randrange(0, 5)
             if ((remove == 0) and (self.matrix[subMatrixIndex][subMatrixMod] != 0)):
                 self.matrix[subMatrixIndex][subMatrixMod] = 0
@@ -90,7 +90,7 @@ class SudokuMatrix(object):
                             self.fillMissingSubMatrixes(row, col+1)
                             return True
                     if (self.matrix[row][col] == 0):
-                        self.matrix[row][col] = "ERR"
+                        self.matrix[row][col] = "X"
                 
                 #matrix cell is now (or already) filled, increment column
                 self.fillMissingSubMatrixes(row, col+1)
@@ -106,8 +106,21 @@ def main():
     
     running = True
 
+    bgColor = (180, 150, 220)
+    screen.fill(bgColor)
+
+
     matrix = SudokuMatrix(9, 0)
     matrix.generateMatrix()
+
+    pygame.font.init() 
+    my_font = pygame.font.SysFont('Verdana', 30)
+    for row in range(9):
+        for col in range(9):
+            matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
+            screen.blit(matrixNum, (row*50+100,col*50+10))
+    pygame.display.flip()
+
 
     while running:
         for event in pygame.event.get():
