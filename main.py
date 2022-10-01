@@ -168,8 +168,8 @@ def main():
                     if event.key == pygame.K_BACKSPACE:
                         self.value = self.value[:-1]
                     else:
-                        if ((len(self.value) < 1) and str(event.unicode).isnumeric() and str(event.unicode) != "0" ):
-                            self.value += event.unicode
+                        if (str(event.unicode).isnumeric() and str(event.unicode) != "0" ):
+                            self.value = event.unicode
                     self.update()
         
         def highlightRed(self):
@@ -299,6 +299,7 @@ def main():
         matrix.generateMatrix()
         renderNewMatrix()
         newGameButton.show()
+        hintButton.show()
         checkButton.show()
         pygame.display.flip()
 
@@ -308,10 +309,28 @@ def main():
         renderMatrix()
         newGameButton.show()
         checkButton.show()
+        hintButton.show()
         for m in alertBoxCollection:
             if m.active:
                 m.show()
         pygame.display.flip()
+    
+    def getHint():
+        i = 0
+        found = False
+        while (i < len(inputBoxCollection)):
+            curInput = inputBoxCollection[i]
+            solutionValue = str(matrix.solutionMatrix[curInput.matrixIndex[0]][curInput.matrixIndex[1]])
+            if (str(curInput.value) != solutionValue):
+                found = True
+                inputBoxCollection[i].value = solutionValue
+                inputBoxCollection[i].update()
+                i = len(inputBoxCollection)
+            i = i + 1 
+        if (not found):
+            print("No fixable values found")
+        renderScreen()
+        
     
     newGameButton = Button(
     "New Game",
@@ -331,6 +350,15 @@ def main():
     bg=(255,255,255),
     onClick=checkAnswers)
 
+    hintButton = Button(
+    "Hint",
+    pos=(10, 90),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=getHint)
+
     #Initial Render
     newGame()
 
@@ -348,6 +376,7 @@ def main():
                     for m in alertBoxCollection:
                         m.click(event)
                     newGameButton.click(event)
+                    hintButton.click(event)
                     checkButton.click(event)
                     renderScreen()
             
