@@ -189,8 +189,8 @@ def main():
             self.size = size
             self.surface = pygame.Surface(self.size)
             self.surface.fill(self.bgColor)
-            self.surface.blit(self.text, (10, 0))
-            self.rect = pygame.Rect(self.x, self.y, self.size[0]+5, self.size[1]+5)
+            self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
+            self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
 
         def show(self):
             self.active = True
@@ -234,15 +234,15 @@ def main():
             m.show()
 
     class Button():
-        def __init__(self, text,  pos, font, onClick, fontColor="White", bg="black"):
+        def __init__(self, text,  pos, size, font, onClick, fontColor="White", bg="black"):
             self.x, self.y = pos
             self.font = pygame.font.SysFont("Verdana", font)
             self.onClick = onClick
             self.text = self.font.render(text, 1, pygame.Color(fontColor))
-            self.size = self.text.get_size()
+            self.size = size
             self.surface = pygame.Surface(self.size)
             self.surface.fill(bg)
-            self.surface.blit(self.text, (0, 0))
+            self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
             self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
     
         def show(self):
@@ -270,7 +270,7 @@ def main():
     
 
     loseAlert = AlertBox(
-        pos=(170,150), 
+        pos=(int(screen_width/2)-int(300/2),int(screen_height/2)-int(120/2)), 
         text="Incorrect!", 
         size=(300,120), 
         fontSize=40,
@@ -279,7 +279,7 @@ def main():
     )
 
     winAlert = AlertBox(
-        pos=(170,150), 
+        pos=(int(screen_width/2)-int(300/2),int(screen_height/2)-int(120/2)), 
         text="You Win!", 
         size=(300,120), 
         fontSize=40, 
@@ -315,16 +315,18 @@ def main():
     
     newGameButton = Button(
     "New Game",
-    (10, 10),
-    font=15,
+    pos=(10, 10),
+    size=(80, 30),
+    font=14,
     fontColor=(80,80,80),
     bg=(255,255,255),
     onClick=newGame)
 
     checkButton = Button(
     "Check",
-    (10, 50),
-    font=15,
+    pos=(10, 50),
+    size=(80, 30),
+    font=14,
     fontColor=(80,80,80),
     bg=(255,255,255),
     onClick=checkAnswers)
