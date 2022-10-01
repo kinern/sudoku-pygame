@@ -19,7 +19,7 @@ class SudokuMatrix(object):
         self.fillDiagonalSubmatrixes()
         self.fillMissingSubMatrixes()
         self.addMissingSquares()
-        print(self.matrix)
+        #print(self.matrix)
     
     def fillDiagonalSubmatrixes(self):
         for a in range(0, self.size, self.sqrt):
@@ -109,12 +109,77 @@ def main():
 
     matrix = SudokuMatrix(9, 54)
 
+    #All input boxes
+    inputBoxCollection = []
+
+    class InputBox():
+        def __init__(self, pos, font, matrixIndex, bgColor=(255,255,255), fontColor=(0,0,0)):
+            self.x, self.y = pos
+            self.value = ""
+            self.selected = False
+            self.font = self.font = pygame.font.SysFont("Verdana", font)
+            self.fontColor = fontColor
+            self.bgColor = bgColor
+            self.inactiveBgColor = bgColor
+            self.selectedBgColor = (bgColor[0]-50, bgColor[1]-50, bgColor[2]-50)
+            self.text = self.font.render(self.value, 1, pygame.Color(self.fontColor))
+            self.size = (40, 40)
+            self.surface = pygame.Surface(self.size)
+            self.surface.fill(self.bgColor)
+            self.surface.blit(self.text, (10, 0))
+            self.rect = pygame.Rect(self.x, self.y, self.size[0]+10, self.size[1]+10)
+            self.matrixIndex = matrixIndex
+        
+        def show(self):
+            screen.blit(self.surface, (self.x, self.y))
+        
+        def update(self):
+            self.text = self.font.render(self.value, 1, pygame.Color(self.fontColor))
+            self.surface.fill(self.bgColor)
+            self.surface.blit(self.text, (10, 0))
+            self.rect = pygame.Rect(self.x, self.y, self.size[0]+10, self.size[1]+10)
+            screen.blit(self.surface, (self.x, self.y))
+            pygame.display.flip()
+    
+        def handleEvent(self, event):
+            x, y = pygame.mouse.get_pos()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame.mouse.get_pressed()[0]:
+                    if self.rect.collidepoint(x, y):
+                        self.selected = True
+                        if (self.bgColor == self.inactiveBgColor):
+                            self.bgColor = self.selectedBgColor
+                            self.update()
+                    else:
+                        self.selected = False
+                        if (self.bgColor == self.selectedBgColor):
+                            self.bgColor = self.inactiveBgColor
+                            self.update()
+
+            if (self.selected):
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_BACKSPACE:
+                        self.value = self.value[:-1]
+                    else:
+                        #print("entered:"+str(event.unicode)+" into cell "+str(self.matrixIndex))
+                        if ((len(self.value) < 1) and str(event.unicode).isnumeric() and str(event.unicode) != "0" ):
+                            self.value += event.unicode
+                            #print("value:"+str(self.value))
+                    self.update()
+
     def renderNewMatrix():
         for row in range(9):
             for col in range(9):
                 if (str(matrix.matrix[row][col]) == ""):
-                    inputRect = Rect(row*50+100, col*50+10, 40, 40)
-                    pygame.draw.rect(screen, (255,255,255), inputRect)
+                    #inputRect = Rect(row*50+100, col*50+10, 40, 40)
+                    #pygame.draw.rect(screen, (255,255,255), inputRect)
+                    newInputBox = InputBox(
+                        pos=(row*50+100, col*50+10),
+                        font=30,
+                        matrixIndex=[row,col],
+                    )
+                    newInputBox.show()
+                    inputBoxCollection.append(newInputBox)
                 else:
                     matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
                     screen.blit(matrixNum, (row*50+110,col*50+10))
@@ -140,10 +205,15 @@ def main():
                 if pygame.mouse.get_pressed()[0]:
                     if self.rect.collidepoint(x, y):
                         self.onClick()
-
-    def buttonClickHandler():
-            print("Clicked the button")
-            newGame()
+    
+    
+    def newGame():
+        inputBoxCollection.clear()
+        screen.fill(bgColor)
+        matrix.generateMatrix()
+        renderNewMatrix()
+        button1.show()
+        pygame.display.flip()
     
     button1 = Button(
     "New Game",
@@ -151,15 +221,9 @@ def main():
     font=15,
     fontColor=(80,80,80),
     bg=(255,255,255),
-    onClick=buttonClickHandler)
+    onClick=newGame)
 
     #Initial Render
-    def newGame():
-        screen.fill(bgColor)
-        matrix.generateMatrix()
-        renderNewMatrix()
-        button1.show()
-        pygame.display.flip()
     newGame()
 
     while running:
@@ -167,6 +231,8 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             button1.click(event)
+            for n in inputBoxCollection:
+                n.handleEvent(event)
 
 if __name__=="__main__":
     main()
