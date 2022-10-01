@@ -15,6 +15,7 @@ class SudokuMatrix(object):
         self.matrix = [[0 for x in range(size)] for x in range(size)]
 
     def generateMatrix(self):
+        self.matrix = [[0 for x in range(self.size)] for x in range(self.size)]
         self.fillDiagonalSubmatrixes()
         self.fillMissingSubMatrixes()
         self.addMissingSquares()
@@ -95,41 +96,77 @@ class SudokuMatrix(object):
             return False
 
 
-
 def main():
     pygame.init()
     logo = pygame.image.load("logo.png")
     pygame.display.set_icon(logo)
     pygame.display.set_caption("Sudoku!")
-
-    screen = pygame.display.set_mode((screen_width,screen_height))
-    
-    running = True
-
-    bgColor = (180, 150, 220)
-    screen.fill(bgColor)
-
-
-    matrix = SudokuMatrix(9, 54)
-    matrix.generateMatrix()
-
     pygame.font.init() 
     my_font = pygame.font.SysFont('Verdana', 30)
-    for row in range(9):
-        for col in range(9):
-            if (str(matrix.matrix[row][col]) == ""):
-                inputRect = Rect(row*50+100, col*50+10, 40, 40)
-                pygame.draw.rect(screen, (255,255,255), inputRect)
-            else:
-                matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
-                screen.blit(matrixNum, (row*50+110,col*50+10))
-    pygame.display.flip()
+    screen = pygame.display.set_mode((screen_width,screen_height))
+    running = True
+    bgColor = (180, 150, 220)
 
+    matrix = SudokuMatrix(9, 54)
+
+    def renderNewMatrix():
+        for row in range(9):
+            for col in range(9):
+                if (str(matrix.matrix[row][col]) == ""):
+                    inputRect = Rect(row*50+100, col*50+10, 40, 40)
+                    pygame.draw.rect(screen, (255,255,255), inputRect)
+                else:
+                    matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
+                    screen.blit(matrixNum, (row*50+110,col*50+10))
+
+    class Button():
+        def __init__(self, text,  pos, font, onClick, fontColor="White", bg="black"):
+            self.x, self.y = pos
+            self.font = pygame.font.SysFont("Verdana", font)
+            self.onClick = onClick
+            self.text = self.font.render(text, 1, pygame.Color(fontColor))
+            self.size = self.text.get_size()
+            self.surface = pygame.Surface(self.size)
+            self.surface.fill(bg)
+            self.surface.blit(self.text, (0, 0))
+            self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
+    
+        def show(self):
+            screen.blit(self.surface, (self.x, self.y))
+    
+        def click(self, event):
+            x, y = pygame.mouse.get_pos()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame.mouse.get_pressed()[0]:
+                    if self.rect.collidepoint(x, y):
+                        self.onClick()
+
+    def buttonClickHandler():
+            print("Clicked the button")
+            newGame()
+    
+    button1 = Button(
+    "New Game",
+    (10, 10),
+    font=15,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=buttonClickHandler)
+
+    #Initial Render
+    def newGame():
+        screen.fill(bgColor)
+        matrix.generateMatrix()
+        renderNewMatrix()
+        button1.show()
+        pygame.display.flip()
+    newGame()
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            button1.click(event)
 
 if __name__=="__main__":
     main()
