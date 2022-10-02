@@ -162,9 +162,11 @@ def titleScreen(screen):
 
     titleImage = pygame.image.load("sudoku-title.png").convert_alpha()
 
+    footerFont = pygame.font.SysFont("Verdana", 14)
+    footerText = footerFont.render("Created by Natalie (kinern @ github)", 1, pygame.Color(80,80,80))
+
     while True:
         if (localGameState != GameState.TITLE):
-            print(localGameState)
             return localGameState
 
         #Handle Title Screen Events
@@ -174,12 +176,12 @@ def titleScreen(screen):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed()[0]:
                     for button in buttons:
-                        print("click event")
                         button.click(event)
 
         #Render Title Screen
-        screen.fill((255,200,200))
+        screen.fill((230,150,150))
         screen.blit(titleImage, pygame.rect.Rect(int(640/2)-int(305/2),60, 305, 102))
+        screen.blit(footerText, (int(640/2)-140, 440))
         for button in buttons:
             screen.blit(button.surface, (button.x, button.y))
         pygame.display.flip()
@@ -500,12 +502,10 @@ def main(gameState):
 
     running = True
     while running:
+        clock.tick(60)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 gameState = GameState.QUIT
-        if (gameState  != GameState.TITLE):
-            print("changed")
-        clock.tick(60)
         if gameState == GameState.TITLE:
             gameState = titleScreen(screen)
         if gameState == GameState.NEWGAME:
