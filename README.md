@@ -8,7 +8,6 @@ Command to run: ```py main.py```
 ![ScreenShot](/sudoku-screenshot.png)
 
 ### Features To Add  
-* Title Screen
 * Exit Button With Confirmation
 * Save / Load Game Buttons And Menu
 * Selectable Matrix Size And Missing Values Number
