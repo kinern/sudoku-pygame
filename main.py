@@ -142,7 +142,7 @@ def titleScreen(screen):
 
     startBtn = Button(
         "Start",
-        pos=(10, 10),
+        pos=(int(640/2)-40, 250),
         size=(80, 30),
         font=14,
         fontColor=(80,80,80),
@@ -151,7 +151,7 @@ def titleScreen(screen):
 
     quitBtn = Button(
         "Quit",
-        pos=(10, 50),
+        pos=(int(640/2)-40, 290),
         size=(80, 30),
         font=14,
         fontColor=(80,80,80),
@@ -159,6 +159,8 @@ def titleScreen(screen):
         onClick=quitGame)
 
     buttons = [startBtn, quitBtn]
+
+    titleImage = pygame.image.load("sudoku-title.png").convert_alpha()
 
     while True:
         if (localGameState != GameState.TITLE):
@@ -177,6 +179,7 @@ def titleScreen(screen):
 
         #Render Title Screen
         screen.fill((255,200,200))
+        screen.blit(titleImage, pygame.rect.Rect(int(640/2)-int(305/2),60, 305, 102))
         for button in buttons:
             screen.blit(button.surface, (button.x, button.y))
         pygame.display.flip()
