@@ -3,6 +3,7 @@ from pygame.locals import *
 import random
 import math
 import copy
+from enum import Enum
 
 screen_width = 640
 screen_height = 480
@@ -98,24 +99,106 @@ class SudokuMatrix(object):
                     self.matrix[row][col] = 0      
             return False
 
+class GameState(Enum):
+    QUIT = -1
+    TITLE = 0
+    NEWGAME = 1
 
-def main():
-    pygame.init()
-    logo = pygame.image.load("logo.png")
-    pygame.display.set_icon(logo)
-    pygame.display.set_caption("Sudoku!")
-    pygame.font.init() 
-    my_font = pygame.font.SysFont('Verdana', 30)
-    screen = pygame.display.set_mode((screen_width,screen_height))
-    running = True
-    bgColor = (180, 150, 220)
+gameState = GameState.TITLE
 
+class Button():
+        def __init__(self, text,  pos, size, font, onClick, fontColor="White", bg="black"):
+            self.x, self.y = pos
+            self.font = pygame.font.SysFont("Verdana", font)
+            self.onClick = onClick
+            self.text = self.font.render(text, 1, pygame.Color(fontColor))
+            self.size = size
+            self.surface = pygame.Surface(self.size)
+            self.surface.fill(bg)
+            self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
+            self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
+    
+        #def show(self):
+        #    screen.blit(self.surface, (self.x, self.y))
+    
+        def click(self, event):
+            x, y = pygame.mouse.get_pos()
+            if self.rect.collidepoint(x, y):
+                self.onClick()
+
+
+def titleScreen(screen):
+
+    localGameState = GameState.TITLE
+
+    def changeToNewGame():
+        print("change to new game")
+        nonlocal localGameState
+        localGameState = GameState.NEWGAME
+
+    def quitGame():
+        nonlocal localGameState
+        localGameState = GameState.QUIT
+
+    startBtn = Button(
+        "Start",
+        pos=(10, 10),
+        size=(80, 30),
+        font=14,
+        fontColor=(80,80,80),
+        bg=(255,255,255),
+        onClick=changeToNewGame)
+
+    quitBtn = Button(
+        "Quit",
+        pos=(10, 50),
+        size=(80, 30),
+        font=14,
+        fontColor=(80,80,80),
+        bg=(255,255,255),
+        onClick=quitGame)
+
+    buttons = [startBtn, quitBtn]
+
+    while True:
+        if (localGameState != GameState.TITLE):
+            print(localGameState)
+            return localGameState
+
+        #Handle Title Screen Events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return GameState.QUIT
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame.mouse.get_pressed()[0]:
+                    for button in buttons:
+                        print("click event")
+                        button.click(event)
+
+        #Render Title Screen
+        screen.fill((255,200,200))
+        for button in buttons:
+            screen.blit(button.surface, (button.x, button.y))
+        pygame.display.flip()
+
+
+def gameScreen(screen):
+
+    localGameState = GameState.NEWGAME
+
+    def changeToTitle():
+        nonlocal localGameState
+        localGameState = GameState.TITLE
+    
+    def quitGame():
+        nonlocal localGameState
+        localGameState = GameState.QUIT
+
+    screenBgColor = (180, 150, 220)
+    matrixFont = pygame.font.SysFont('Verdana', 30)
     matrix = SudokuMatrix(9, 54)
 
-    #All input boxes
     inputBoxCollection = []
-    
-    #All message boxes (win, lose, no hints available)
     alertBoxCollection = []
 
     class InputBox():
@@ -220,7 +303,7 @@ def main():
                     newInputBox.show()
                     inputBoxCollection.append(newInputBox)
                 else:
-                    matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
+                    matrixNum = matrixFont.render(str(matrix.matrix[row][col]), True, (255,255,255))
                     screen.blit(matrixNum, (row*50+110,col*50+20))
     
     #Existing matrix
@@ -228,30 +311,11 @@ def main():
         for row in range(9):
             for col in range(9):
                 if (str(matrix.matrix[row][col]) != ""):
-                    matrixNum = my_font.render(str(matrix.matrix[row][col]), True, (255,255,255))
+                    matrixNum = matrixFont.render(str(matrix.matrix[row][col]), True, (255,255,255))
                     screen.blit(matrixNum, (row*50+110,col*50+20))
         for m in inputBoxCollection:
             m.show()
 
-    class Button():
-        def __init__(self, text,  pos, size, font, onClick, fontColor="White", bg="black"):
-            self.x, self.y = pos
-            self.font = pygame.font.SysFont("Verdana", font)
-            self.onClick = onClick
-            self.text = self.font.render(text, 1, pygame.Color(fontColor))
-            self.size = size
-            self.surface = pygame.Surface(self.size)
-            self.surface.fill(bg)
-            self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
-            self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
-    
-        def show(self):
-            screen.blit(self.surface, (self.x, self.y))
-    
-        def click(self, event):
-            x, y = pygame.mouse.get_pos()
-            if self.rect.collidepoint(x, y):
-                self.onClick()
 
     def checkAnswers():
         wrong = False
@@ -306,21 +370,19 @@ def main():
     
     def newGame():
         inputBoxCollection.clear()
-        screen.fill(bgColor)
+        screen.fill(screenBgColor)
         matrix.generateMatrix()
         renderNewMatrix()
-        newGameButton.show()
-        hintButton.show()
-        checkButton.show()
+        for button in buttons:
+            screen.blit(button.surface, (button.x, button.y))
         pygame.display.flip()
 
     #Render everything to screen
     def renderScreen():
-        screen.fill(bgColor)
+        screen.fill(screenBgColor)
         renderMatrix()
-        newGameButton.show()
-        checkButton.show()
-        hintButton.show()
+        for button in buttons:
+            screen.blit(button.surface, (button.x, button.y))
         for m in alertBoxCollection:
             if m.active:
                 m.show()
@@ -378,31 +440,76 @@ def main():
     bg=(255,255,255),
     onClick=getHint)
 
+    titleButton = Button(
+    "Title",
+    pos=(10, 130),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=changeToTitle)
+
+    quitButton = Button(
+    "Quit",
+    pos=(10, 170),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=quitGame)
+
+    buttons = [newGameButton, checkButton, hintButton, titleButton, quitButton]
+
     #Initial Render
     newGame()
 
-    clock = pygame.time.Clock()
-
-    while running:
-        clock.tick(60)
+    while True:
+        if localGameState != GameState.NEWGAME:
+            return localGameState
+        #Handle Title Screen Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-            
-            #Click Only Events
+                return GameState.QUIT
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed()[0]:
-                    for m in alertBoxCollection:
-                        m.click(event)
-                    newGameButton.click(event)
-                    hintButton.click(event)
-                    checkButton.click(event)
+                    for alert in alertBoxCollection:
+                        alert.click(event)
+                    for button in buttons:
+                        button.click(event)
                     renderScreen()
-            
-            #Click And Text Entry Events
+
             if (event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN):
                 for n in inputBoxCollection:
                     n.handleEvent(event)
 
+
+def main(gameState):
+    pygame.init()
+    logo = pygame.image.load("logo.png")
+    pygame.display.set_icon(logo)
+    pygame.display.set_caption("Sudoku!")
+
+    clock = pygame.time.Clock()
+
+    screen = pygame.display.set_mode((screen_width,screen_height))
+    screenBgColor = (180, 150, 220)
+    screen.fill((255,255,255))
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                gameState = GameState.QUIT
+        if (gameState  != GameState.TITLE):
+            print("changed")
+        clock.tick(60)
+        if gameState == GameState.TITLE:
+            gameState = titleScreen(screen)
+        if gameState == GameState.NEWGAME:
+            gameState = gameScreen(screen)
+        if gameState == GameState.QUIT:
+            pygame.quit()
+            return
+
 if __name__=="__main__":
-    main()
+    main(gameState)
