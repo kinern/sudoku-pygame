@@ -134,7 +134,6 @@ def titleScreen(screen):
     localGameState = GameState.TITLE
 
     def changeToNewGame():
-        print("change to new game")
         nonlocal localGameState
         localGameState = GameState.NEWGAME
 
@@ -425,15 +424,26 @@ def gameScreen(screen):
         gameData['solutionMatrix'] = matrix.solutionMatrix
         inputValues = [] 
         for n in inputBoxCollection:
-            inputValues.append({'matrixIndex': n.matrixIndex, 'value': n.value})
+            inputValues.append({"matrixIndex": n.matrixIndex, "value": n.value})
         gameData['inputValues'] = inputValues
         gameData.close()
-        #Success message
-        print("saved")
 
     def loadGame():
-        matrix, solutionMatrix, inputValues = load()
-        print(matrix)
+        savedMatrix, solutionMatrix, inputValues = load()
+        inputBoxCollection.clear()
+        screen.fill(screenBgColor)
+        matrix.matrix = savedMatrix
+        matrix.solutionMatrix = solutionMatrix
+        renderNewMatrix()
+        for n in inputBoxCollection:
+            inputVal =  [m for m in inputValues if m["matrixIndex"] == n.matrixIndex]
+            inputVal = inputVal[0]
+            n.value = inputVal["value"]
+            n.update()
+        renderScreen()
+        for button in buttons:
+            screen.blit(button.surface, (button.x, button.y))
+        pygame.display.flip()
 
     def load():
         try:
