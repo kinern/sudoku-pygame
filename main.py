@@ -4,6 +4,8 @@ import random
 import math
 import copy
 from enum import Enum
+import shelve
+
 
 screen_width = 640
 screen_height = 480
@@ -416,6 +418,31 @@ def gameScreen(screen):
         for n in inputBoxCollection:
             n.bgColor = n.inactiveBgColor
             n.update()
+
+    def saveGame():
+        gameData = shelve.open("save.bin") 
+        gameData['matrix'] = matrix.matrix
+        gameData['solutionMatrix'] = matrix.solutionMatrix
+        inputValues = [] 
+        for n in inputBoxCollection:
+            inputValues.append({'matrixIndex': n.matrixIndex, 'value': n.value})
+        gameData['inputValues'] = inputValues
+        gameData.close()
+        #Success message
+        print("saved")
+
+    def loadGame():
+        matrix, solutionMatrix, inputValues = load()
+        print(matrix)
+
+    def load():
+        try:
+            gameData = shelve.open("save.bin") 
+            return gameData['matrix'], gameData['solutionMatrix'], gameData['inputValues']
+        except KeyError:
+            return None
+        finally:
+            gameData.close()
         
     
     newGameButton = Button(
@@ -463,7 +490,25 @@ def gameScreen(screen):
     bg=(255,255,255),
     onClick=quitGame)
 
-    buttons = [newGameButton, checkButton, hintButton, titleButton, quitButton]
+    saveButton = Button(
+    "Save",
+    pos=(10, 210),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=saveGame)
+
+    loadButton = Button(
+    "Load",
+    pos=(10, 250),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=loadGame)
+
+    buttons = [newGameButton, checkButton, hintButton, titleButton, quitButton, saveButton, loadButton]
 
     #Initial Render
     newGame()
