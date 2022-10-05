@@ -102,9 +102,12 @@ class SudokuMatrix(object):
             return False
 
 class GameState(Enum):
+    PREVSTATE = -2
     QUIT = -1
     TITLE = 0
     NEWGAME = 1
+    LOAD = 2
+    
 
 gameState = GameState.TITLE
 
@@ -137,6 +140,10 @@ def titleScreen(screen):
         nonlocal localGameState
         localGameState = GameState.NEWGAME
 
+    def changeToLoadScreen():
+        nonlocal localGameState
+        localGameState = GameState.LOAD
+
     def quitGame():
         nonlocal localGameState
         localGameState = GameState.QUIT
@@ -150,21 +157,38 @@ def titleScreen(screen):
         bg=(255,255,255),
         onClick=changeToNewGame)
 
+    loadBtn = Button(
+        "Load",
+        pos=(int(640/2)-40, 290),
+        size=(80,30),
+        font=14,
+        fontColor=(80,80,80),
+        bg=(255,255,255),
+        onClick=changeToLoadScreen)
+
     quitBtn = Button(
         "Quit",
-        pos=(int(640/2)-40, 290),
+        pos=(int(640/2)-40, 330),
         size=(80, 30),
         font=14,
         fontColor=(80,80,80),
         bg=(255,255,255),
         onClick=quitGame)
 
-    buttons = [startBtn, quitBtn]
+    buttons = [startBtn, loadBtn, quitBtn]
 
     titleImage = pygame.image.load("sudoku-title.png").convert_alpha()
 
     footerFont = pygame.font.SysFont("Verdana", 14)
     footerText = footerFont.render("Created by Natalie (kinern @ github)", 1, pygame.Color(80,80,80))
+
+    #Render Title Screen
+    screen.fill((230,150,150))
+    screen.blit(titleImage, pygame.rect.Rect(int(640/2)-int(305/2),60, 305, 102))
+    screen.blit(footerText, (int(640/2)-140, 440))
+    for button in buttons:
+        screen.blit(button.surface, (button.x, button.y))
+    pygame.display.flip()
 
     while True:
         if (localGameState != GameState.TITLE):
@@ -179,16 +203,15 @@ def titleScreen(screen):
                     for button in buttons:
                         button.click(event)
 
-        #Render Title Screen
-        screen.fill((230,150,150))
-        screen.blit(titleImage, pygame.rect.Rect(int(640/2)-int(305/2),60, 305, 102))
-        screen.blit(footerText, (int(640/2)-140, 440))
-        for button in buttons:
-            screen.blit(button.surface, (button.x, button.y))
-        pygame.display.flip()
 
+#Game data class for returning from load menu
+class GameData:
+    def __init__(self, gameMatrix, solutionMatrix, inputValues):
+        self.gameMatrix = gameMatrix
+        self.solutionMatrix = solutionMatrix
+        self.inputValues = inputValues
 
-def gameScreen(screen):
+def gameScreen(screen, currentGameData = None):
 
     localGameState = GameState.NEWGAME
 
@@ -199,6 +222,19 @@ def gameScreen(screen):
     def quitGame():
         nonlocal localGameState
         localGameState = GameState.QUIT
+    
+    def loadGameScreen():
+        nonlocal localGameState
+        nonlocal currentGameData
+        inputValues = getInputValues()
+        currentGameData = GameData(matrix.matrix, matrix.solutionMatrix, inputValues)
+        localGameState = GameState.LOAD
+
+    def getInputValues():
+        inputValues = [] 
+        for n in inputBoxCollection:
+            inputValues.append({"matrixIndex": n.matrixIndex, "value": n.value})
+        return inputValues
 
     screenBgColor = (180, 150, 220)
     matrixFont = pygame.font.SysFont('Verdana', 30)
@@ -418,32 +454,11 @@ def gameScreen(screen):
             n.bgColor = n.inactiveBgColor
             n.update()
 
-    def saveGame():
-        gameData = shelve.open("save.bin") 
-        gameData['matrix'] = matrix.matrix
-        gameData['solutionMatrix'] = matrix.solutionMatrix
-        inputValues = [] 
-        for n in inputBoxCollection:
-            inputValues.append({"matrixIndex": n.matrixIndex, "value": n.value})
-        gameData['inputValues'] = inputValues
-        gameData.close()
 
     def loadGame():
         savedMatrix, solutionMatrix, inputValues = load()
-        inputBoxCollection.clear()
-        screen.fill(screenBgColor)
-        matrix.matrix = savedMatrix
-        matrix.solutionMatrix = solutionMatrix
-        renderNewMatrix()
-        for n in inputBoxCollection:
-            inputVal =  [m for m in inputValues if m["matrixIndex"] == n.matrixIndex]
-            inputVal = inputVal[0]
-            n.value = inputVal["value"]
-            n.update()
-        renderScreen()
-        for button in buttons:
-            screen.blit(button.surface, (button.x, button.y))
-        pygame.display.flip()
+        gameData = GameData(savedMatrix, solutionMatrix, inputValues)
+        renderGameData(gameData)
 
     def load():
         try:
@@ -500,32 +515,42 @@ def gameScreen(screen):
     bg=(255,255,255),
     onClick=quitGame)
 
-    saveButton = Button(
+    loadScreenButton = Button(
     "Save",
     pos=(10, 210),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
     bg=(255,255,255),
-    onClick=saveGame)
+    onClick=loadGameScreen)
 
-    loadButton = Button(
-    "Load",
-    pos=(10, 250),
-    size=(80, 30),
-    font=14,
-    fontColor=(80,80,80),
-    bg=(255,255,255),
-    onClick=loadGame)
+    buttons = [newGameButton, checkButton, hintButton, titleButton, quitButton, loadScreenButton]
 
-    buttons = [newGameButton, checkButton, hintButton, titleButton, quitButton, saveButton, loadButton]
+    def renderGameData(gameData):
+        inputBoxCollection.clear()
+        screen.fill(screenBgColor)
+        matrix.matrix = gameData.gameMatrix
+        matrix.solutionMatrix = gameData.solutionMatrix
+        renderNewMatrix()
+        for n in inputBoxCollection:
+            inputVal =  [m for m in gameData.inputValues if m["matrixIndex"] == n.matrixIndex]
+            inputVal = inputVal[0]
+            n.value = inputVal["value"]
+            n.update()
+        renderScreen()
+        for button in buttons:
+            screen.blit(button.surface, (button.x, button.y))
+        pygame.display.flip()
 
     #Initial Render
-    newGame()
+    if (currentGameData != None):
+        renderGameData(currentGameData)
+    else:
+        newGame()
 
     while True:
         if localGameState != GameState.NEWGAME:
-            return localGameState
+            return {'state':localGameState, 'data':currentGameData} #Change this
         #Handle Title Screen Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -542,6 +567,123 @@ def gameScreen(screen):
                 for n in inputBoxCollection:
                     n.handleEvent(event)
 
+def loadScreen(screen, currentGameData = None):
+
+    localGameState = GameState.LOAD
+    
+    class saveFileBox:
+        def __init__(self, num):
+            self.num = num
+
+        def render(self, num):
+            boxRect = Rect(40, 80*self.num+10, 240, 80)
+            pygame.draw.rect(screen, (255,255,255), boxRect)
+    
+    #Display files with buttons
+    saveFileBoxes = []
+    for n in range(3):
+        newBox = saveFileBox(n)
+        saveFileBoxes.append(newBox)
+    
+    def saveGame():
+        if (currentGameData == None):
+            print("No game data to save")
+            return False
+        gameData = shelve.open("save.bin") 
+        gameData['matrix'] = currentGameData.gameMatrix
+        gameData['solutionMatrix'] = currentGameData.solutionMatrix
+        gameData['inputValues'] = currentGameData.inputValues
+        gameData.close()
+        print("saved data")
+
+    loadedGameData = None
+
+    def load():
+        nonlocal localGameState
+        nonlocal loadedGameData
+        try:
+            gameData = shelve.open("save.bin") 
+            loadedGameData =  GameData(gameData['matrix'], gameData['solutionMatrix'], gameData['inputValues'])
+            localGameState = GameState.NEWGAME
+        except KeyError:
+            return None
+        finally:
+            gameData.close()
+
+    def goBack():
+        nonlocal localGameState
+        localGameState = GameState.PREVSTATE
+
+    def quitGame():
+        nonlocal localGameState
+        localGameState = GameState.QUIT
+
+    #Get history from main loop to determine if this is disabled
+    saveBtn = Button(
+    "Save",
+    pos=(100, 420),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=saveGame)
+
+    #Check if no loads available
+    loadBtn = Button(
+    "Load",
+    pos=(220, 420),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=load)
+
+    returnBtn = Button(
+    "Return",
+    pos=(340, 420),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=goBack)
+
+    quitBtn = Button(
+    "Quit",
+    pos=(460, 420),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=quitGame)
+
+    buttons = [saveBtn, loadBtn, returnBtn, quitBtn]
+
+    #Render Load Screen
+    screen.fill((150,200,180))
+    for button in buttons:
+        screen.blit(button.surface, (button.x, button.y))
+    pygame.display.flip()
+
+    running = True
+    while running:
+        if localGameState != GameState.LOAD:
+            if (loadedGameData != None):
+                return {'state': localGameState, 'data': loadedGameData}
+            else: 
+                return {'state': localGameState, 'data': currentGameData}
+        #Handle Load Screen Events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return GameState.QUIT
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame.mouse.get_pressed()[0]:
+                    for button in buttons:
+                        button.click(event)
+        
+        
+
+        
+
 
 def main(gameState):
     pygame.init()
@@ -555,19 +697,52 @@ def main(gameState):
     screenBgColor = (180, 150, 220)
     screen.fill((255,255,255))
 
+    screenHistory = []
+    gameData = None
+
     running = True
     while running:
         clock.tick(60)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 gameState = GameState.QUIT
+        
+        #Back Button For Load Screen
+        if gameState == GameState.PREVSTATE:
+            if (len(screenHistory) < 1):
+                print("Error - empty screen history")
+                gameState = GameState.TITLE
+            elif (len(screenHistory) < 2):
+                print("Error - less than 2 screens in history")
+                gameState = screenHistory.pop()
+            else: 
+                screenHistory.pop()
+                gameState = screenHistory.pop()
+        
+        #Regular Screens
         if gameState == GameState.TITLE:
+            screenHistory.append(GameState.TITLE)
+            gameData = None
             gameState = titleScreen(screen)
         if gameState == GameState.NEWGAME:
-            gameState = gameScreen(screen)
+            screenHistory.append(GameState.NEWGAME)
+            gameObj = gameScreen(screen, gameData)
+            gameData = gameObj['data']
+            gameState = gameObj['state']
+        if gameState == GameState.LOAD:
+            screenHistory.append(GameState.LOAD)
+            gameObj = loadScreen(screen, gameData)
+            gameData = gameObj['data']
+            gameState = gameObj['state']
+        #Quit
         if gameState == GameState.QUIT:
             pygame.quit()
             return
+        
+        #Maintain small screen history list
+        if (len(screenHistory) > 2):
+            screenHistory = screenHistory[-2:]
+
 
 if __name__=="__main__":
     main(gameState)
