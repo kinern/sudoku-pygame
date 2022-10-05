@@ -5,6 +5,8 @@ import math
 import copy
 from enum import Enum
 import shelve
+from pathlib import Path
+
 
 
 screen_width = 640
@@ -210,6 +212,7 @@ class GameData:
         self.gameMatrix = gameMatrix
         self.solutionMatrix = solutionMatrix
         self.inputValues = inputValues
+
 
 def gameScreen(screen, currentGameData = None):
 
@@ -554,7 +557,7 @@ def gameScreen(screen, currentGameData = None):
         #Handle Title Screen Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return GameState.QUIT
+                return {'state': GameState.QUIT, 'data': None }
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed()[0]:
                     for alert in alertBoxCollection:
@@ -567,23 +570,67 @@ def gameScreen(screen, currentGameData = None):
                 for n in inputBoxCollection:
                     n.handleEvent(event)
 
+
 def loadScreen(screen, currentGameData = None):
 
     localGameState = GameState.LOAD
     
     class saveFileBox:
-        def __init__(self, num):
+        def __init__(self, num, hasSave = True, bgColor=(255,255,255) ):
+            self.x = 40
+            self.y = 120*num+40
+            self.size = (560, 100)
+            self.hasSave = hasSave
+            self.selected = False
             self.num = num
+            self.font = pygame.font.SysFont("Verdana", 20)
+            self.text = self.font.render("Game File "+str(num+1), 1, (80,80,80))
+            self.surface = pygame.Surface(self.size)
+            self.surface.fill(bgColor)
+            self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
+            self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
+        
+        def render(self):
+            bgColor = (180, 180, 255) if (self.selected) else (255,255,255)
+            bgColor = bgColor if (self.hasSave) else (200,200,200)
+            self.surface.fill(bgColor)
+            self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
+            self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
+            screen.blit(self.surface, (self.x, self.y))
 
-        def render(self, num):
-            boxRect = Rect(40, 80*self.num+10, 240, 80)
-            pygame.draw.rect(screen, (255,255,255), boxRect)
-    
+        def click(self, event):
+            if (not self.hasSave): 
+                return False
+            x, y = pygame.mouse.get_pos()
+            if self.rect.collidepoint(x, y):
+                clearSaveSelection()
+                self.selected = True
+                renderSaveFiles()
+
+
+
     #Display files with buttons
     saveFileBoxes = []
     for n in range(3):
-        newBox = saveFileBox(n)
-        saveFileBoxes.append(newBox)
+        fileName = "save.bin.dat"
+        saveFile = Path(fileName)
+        if (not saveFile.is_file()):
+            bgColor = (200,200,200)
+            hasSave = False
+            newBox = saveFileBox(n,hasSave=hasSave,bgColor=bgColor)
+            saveFileBoxes.append(newBox)
+        else:
+            newBox = saveFileBox(n)
+            saveFileBoxes.append(newBox)
+    
+    def clearSaveSelection():
+        for n in saveFileBoxes:
+            n.selected = False
+    
+    def renderSaveFiles():
+        for n in saveFileBoxes:
+            n.render()
+        pygame.display.flip()
     
     def saveGame():
         if (currentGameData == None):
@@ -618,14 +665,15 @@ def loadScreen(screen, currentGameData = None):
         nonlocal localGameState
         localGameState = GameState.QUIT
 
-    #Get history from main loop to determine if this is disabled
+
+    saveBtnColor = (255,255,255) if (currentGameData != None) else (200,200,200)
     saveBtn = Button(
     "Save",
     pos=(100, 420),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
-    bg=(255,255,255),
+    bg=saveBtnColor,
     onClick=saveGame)
 
     #Check if no loads available
@@ -662,6 +710,8 @@ def loadScreen(screen, currentGameData = None):
     screen.fill((150,200,180))
     for button in buttons:
         screen.blit(button.surface, (button.x, button.y))
+    for saveFile in saveFileBoxes:
+        saveFile.render()
     pygame.display.flip()
 
     running = True
@@ -674,17 +724,15 @@ def loadScreen(screen, currentGameData = None):
         #Handle Load Screen Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return GameState.QUIT
+                return {'state':GameState.QUIT, 'data':None}
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed()[0]:
                     for button in buttons:
                         button.click(event)
+                    for saveFile in saveFileBoxes:
+                        saveFile.click(event)
         
         
-
-        
-
-
 def main(gameState):
     pygame.init()
     logo = pygame.image.load("logo.png")
