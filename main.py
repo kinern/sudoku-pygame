@@ -1,108 +1,16 @@
 import pygame
 from pygame.locals import *
-import random
-import math
-import copy
-from enum import Enum
-import shelve
-from pathlib import Path
 import os
+from pathlib import Path
+import shelve
+from enum import Enum
 
-
+from alertBox import AlertBox
+from button import Button
+from sudokuMatrix import SudokuMatrix
 
 screen_width = 640
 screen_height = 480
-
-class SudokuMatrix(object):
-    def __init__(self, size, missingNum):
-        self.size = size
-        self.missingNum = missingNum
-        #square root to used for diagonal sub-matrixes
-        self.sqrt = int(math.sqrt(size))
-        self.matrix = [[0 for x in range(size)] for x in range(size)]
-        self.solutionMatrix = [[0 for x in range(size)] for x in range(size)]
-
-    def generateMatrix(self):
-        self.matrix = [[0 for x in range(self.size)] for x in range(self.size)]
-        self.fillDiagonalSubmatrixes()
-        self.fillMissingSubMatrixes()
-        self.solutionMatrix = copy.deepcopy(self.matrix)
-        self.addMissingSquares()
-        #print(self.matrix)
-    
-    def fillDiagonalSubmatrixes(self):
-        for a in range(0, self.size, self.sqrt):
-            self.fillSubMatrix(a,a)
-
-    def addMissingSquares(self):
-        left = self.missingNum
-        while (left > 0):
-            rangeMax = int(self.size*self.size)
-            cellIndex = random.randrange(0,rangeMax)
-            subMatrixIndex = int(cellIndex / self.size)
-            subMatrixMod = int(cellIndex % self.size)
-            if ((self.matrix[subMatrixIndex][subMatrixMod] != "")):
-                self.matrix[subMatrixIndex][subMatrixMod] = ""
-                left = left - 1
-
-    def fillSubMatrix(self, row, col):
-        for i in range(0, self.sqrt):
-            for j in range(0, self.sqrt):
-                num = random.randrange(1,self.size)
-                while (self.unusedInBox(row, col, num) == False): 
-                    num = random.randrange(1,self.size+1)
-                self.matrix[row + i][col + j] = num
-
-
-    def checkIfPlaceable(self, row, col, num):
-        check = (self.unusedInRow(row, num) and
-                self.unusedInCol(col, num) and
-                self.unusedInBox(row-int(row % self.sqrt), col-int(col % self.sqrt), num))
-        return check
-    
-    def unusedInRow(self, row, num):
-        for j in range(0, self.size):
-           if (self.matrix[row][j] == num):
-                return False
-        return True
-    
-    def unusedInCol(self, col, num):
-        for i in range(0, self.size):
-           if (self.matrix[i][col] == num):
-                return False
-        return True
-
-    def unusedInBox(self, row, col, num):
-        for i in range(0, self.sqrt):
-            for j in range(0, self.sqrt):
-                if (self.matrix[row+i][col+j] == num):
-                    return False
-        return True
-
-    def hasEmptySquare(self, l):
-        for row in range(self.size):
-            for col in range(self.size):
-                if(self.matrix[row][col] == 0):
-                    l[0]= row
-                    l[1]= col
-                    return True
-        return False
-
-
-    def fillMissingSubMatrixes(self):
-        l = [0, 0]
-        if(self.hasEmptySquare(l) == False):
-            return True
-        else:
-            row = l[0]
-            col = l[1]
-            for num in range(1, self.size+1):
-                if(self.checkIfPlaceable(row, col, num)):
-                    self.matrix[row][col]= num
-                    if(self.fillMissingSubMatrixes()):
-                        return True
-                    self.matrix[row][col] = 0      
-            return False
 
 class GameState(Enum):
     PREVSTATE = -2
@@ -110,30 +18,14 @@ class GameState(Enum):
     TITLE = 0
     NEWGAME = 1
     LOAD = 2
-    
 
+class GameData:
+    def __init__(self, gameMatrix, solutionMatrix, inputValues):
+        self.gameMatrix = gameMatrix
+        self.solutionMatrix = solutionMatrix
+        self.inputValues = inputValues
+    
 gameState = GameState.TITLE
-
-class Button():
-        def __init__(self, text,  pos, size, font, onClick, fontColor="White", bg="black"):
-            self.x, self.y = pos
-            self.font = pygame.font.SysFont("Verdana", font)
-            self.onClick = onClick
-            self.text = self.font.render(text, 1, pygame.Color(fontColor))
-            self.size = size
-            self.surface = pygame.Surface(self.size)
-            self.surface.fill(bg)
-            self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
-            self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
-    
-        #def show(self):
-        #    screen.blit(self.surface, (self.x, self.y))
-    
-        def click(self, event):
-            x, y = pygame.mouse.get_pos()
-            if self.rect.collidepoint(x, y):
-                self.onClick()
-
 
 def titleScreen(screen):
 
@@ -180,7 +72,7 @@ def titleScreen(screen):
 
     buttons = [startBtn, loadBtn, quitBtn]
 
-    titleImage = pygame.image.load("sudoku-title.png").convert_alpha()
+    titleImage = pygame.image.load("assets/sudoku-title.png").convert_alpha()
 
     footerFont = pygame.font.SysFont("Verdana", 14)
     footerText = footerFont.render("Created by Natalie (kinern @ github)", 1, pygame.Color(80,80,80))
@@ -205,14 +97,6 @@ def titleScreen(screen):
                 if pygame.mouse.get_pressed()[0]:
                     for button in buttons:
                         button.click(event)
-
-
-#Game data class for returning from load menu
-class GameData:
-    def __init__(self, gameMatrix, solutionMatrix, inputValues):
-        self.gameMatrix = gameMatrix
-        self.solutionMatrix = solutionMatrix
-        self.inputValues = inputValues
 
 
 def gameScreen(screen, currentGameData = None):
@@ -305,34 +189,6 @@ def gameScreen(screen, currentGameData = None):
             self.bgColor = self.wrongColor
             self.update()
     
-
-    #Win / Lose Messages
-    class AlertBox():
-        def __init__(self, pos, text, size, fontSize, bgColor=(255,255,255), fontColor=(80,80,80)):
-            self.x, self.y = pos
-            self.active = False
-            self.bgColor = bgColor
-            self.fontColor = fontColor
-            self.font = pygame.font.SysFont("Verdana", fontSize)
-            self.text = self.font.render(text, 1, pygame.Color(self.fontColor))
-            self.size = size
-            self.surface = pygame.Surface(self.size)
-            self.surface.fill(self.bgColor)
-            self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
-            self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
-
-        def show(self):
-            self.active = True
-            screen.blit(self.surface, (self.x, self.y))
-        
-        def hide(self):
-            self.active = False
-
-        def click(self, event):
-            x, y = pygame.mouse.get_pos()
-            if (not self.rect.collidepoint(x, y)):
-                self.hide()
-
 
     #New Matrix 
     def renderNewMatrix():
@@ -431,7 +287,7 @@ def gameScreen(screen, currentGameData = None):
             screen.blit(button.surface, (button.x, button.y))
         for m in alertBoxCollection:
             if m.active:
-                m.show()
+                screen.blit(m.surface, (m.x, m.y))
         pygame.display.flip()
     
     def getHint():
@@ -536,6 +392,13 @@ def gameScreen(screen, currentGameData = None):
     else:
         newGame()
 
+    def alertIsActive():
+        active = False
+        for n in alertBoxCollection:
+            if (n.active):
+                active = True
+        return active
+
     while True:
         if localGameState != GameState.NEWGAME:
             return {'state':localGameState, 'data':currentGameData} #Change this
@@ -545,10 +408,12 @@ def gameScreen(screen, currentGameData = None):
                 return {'state': GameState.QUIT, 'data': None }
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed()[0]:
-                    for alert in alertBoxCollection:
-                        alert.click(event)
-                    for button in buttons:
-                        button.click(event)
+                    if (alertIsActive()):
+                        for alert in alertBoxCollection:
+                            alert.click(event)
+                    else:
+                        for button in buttons:
+                            button.click(event)
                     renderScreen()
 
             if (event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN):
@@ -743,6 +608,17 @@ def loadScreen(screen, currentGameData = None):
 
     buttons = [saveBtn, loadBtn, returnBtn, quitBtn, deleteBtn]
 
+    modalBox = AlertBox(
+    pos=(int(screen_width/2)-int(300/2),int(screen_height/2)-int(120/2)), 
+    text="Message", 
+    size=(300,120), 
+    fontSize=40,
+    bgColor=(255,255,255), 
+    fontColor=(80,80,80)
+    )
+
+    alertBoxCollection = []
+
     #Render Load Screen
     screen.fill((150,200,180))
     for button in buttons:
@@ -750,6 +626,7 @@ def loadScreen(screen, currentGameData = None):
     for saveFile in saveFileBoxes:
         saveFile.render()
     pygame.display.flip()
+
 
     running = True
     while running:
@@ -764,15 +641,18 @@ def loadScreen(screen, currentGameData = None):
                 return {'state':GameState.QUIT, 'data':None}
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed()[0]:
-                    for button in buttons:
-                        button.click(event)
-                    for saveFile in saveFileBoxes:
-                        saveFile.click(event)
+                    if (modalBox.active):
+                        modalBox.click(event)
+                    else: 
+                        for button in buttons:
+                            button.click(event)
+                        for saveFile in saveFileBoxes:
+                            saveFile.click(event)
         
         
 def main(gameState):
     pygame.init()
-    logo = pygame.image.load("logo.png")
+    logo = pygame.image.load("assets/logo.png")
     pygame.display.set_icon(logo)
     pygame.display.set_caption("Sudoku!")
 
