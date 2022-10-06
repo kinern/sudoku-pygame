@@ -315,18 +315,9 @@ def gameScreen(screen, currentGameData = None):
             n.bgColor = n.inactiveBgColor
             n.update()
 
-    newGameButton = Button(
-    "New Game",
-    pos=(10, 10),
-    size=(80, 30),
-    font=14,
-    fontColor=(80,80,80),
-    bg=(255,255,255),
-    onClick=newGame)
-
     checkButton = Button(
     "Check",
-    pos=(10, 50),
+    pos=(10, 10),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
@@ -335,16 +326,34 @@ def gameScreen(screen, currentGameData = None):
 
     hintButton = Button(
     "Hint",
-    pos=(10, 90),
+    pos=(10, 50),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
     bg=(255,255,255),
     onClick=getHint)
 
+    loadScreenButton = Button(
+    "Save",
+    pos=(10, 90),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=loadGameScreen)
+
+    newGameButton = Button(
+    "New Game",
+    pos=(10, 130),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=newGame)
+
     titleButton = Button(
     "Title",
-    pos=(10, 130),
+    pos=(10, 170),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
@@ -353,21 +362,13 @@ def gameScreen(screen, currentGameData = None):
 
     quitButton = Button(
     "Quit",
-    pos=(10, 170),
+    pos=(10, 210),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
     bg=(255,255,255),
     onClick=quitGame)
 
-    loadScreenButton = Button(
-    "Save",
-    pos=(10, 210),
-    size=(80, 30),
-    font=14,
-    fontColor=(80,80,80),
-    bg=(255,255,255),
-    onClick=loadGameScreen)
 
     buttons = [newGameButton, checkButton, hintButton, titleButton, quitButton, loadScreenButton]
 
