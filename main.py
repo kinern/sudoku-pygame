@@ -6,6 +6,7 @@ import copy
 from enum import Enum
 import shelve
 from pathlib import Path
+import os
 
 
 
@@ -591,16 +592,16 @@ def loadScreen(screen, currentGameData = None):
             self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
         
         def render(self):
-            bgColor = (180, 180, 255) if (self.selected) else (255,255,255)
-            bgColor = bgColor if (self.hasSave) else (200,200,200)
+            bgColor = (255,255,255) if (self.hasSave) else (200,200,200)
+            bgColor = (245, 250, 150) if (self.selected) else bgColor
             self.surface.fill(bgColor)
             self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
             self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
             screen.blit(self.surface, (self.x, self.y))
 
         def click(self, event):
-            if (not self.hasSave): 
-                return False
+            #if (not self.hasSave): 
+            #    return False
             x, y = pygame.mouse.get_pos()
             if self.rect.collidepoint(x, y):
                 clearSaveSelection()
@@ -612,7 +613,7 @@ def loadScreen(screen, currentGameData = None):
     #Display files with buttons
     saveFileBoxes = []
     for n in range(3):
-        fileName = "save.bin.dat"
+        fileName = "save-"+str(n+1)+".bin.dat"
         saveFile = Path(fileName)
         if (not saveFile.is_file()):
             bgColor = (200,200,200)
@@ -636,13 +637,42 @@ def loadScreen(screen, currentGameData = None):
         if (currentGameData == None):
             print("No game data to save")
             return False
-        gameData = shelve.open("save.bin") 
+        selected = False
+        selectedIndex = 0
+        for n in saveFileBoxes:
+            if (n.selected == True):
+                selected = n
+                selectedIndex = n.num
+        if (selected == False):
+            print("No save file selected")
+            return False
+        gameData = shelve.open("save-"+str(selected.num+1)+".bin") 
         gameData['matrix'] = currentGameData.gameMatrix
         gameData['solutionMatrix'] = currentGameData.solutionMatrix
         gameData['inputValues'] = currentGameData.inputValues
         gameData.close()
+        saveFileBoxes[selectedIndex].hasSave = True
         print("saved data")
+        renderSaveFiles()
 
+    def deleteSave():
+        selected = False
+        selectedIndex = 0
+        for n in saveFileBoxes:
+            if ((n.selected == True) and (n.hasSave == True)):
+                selected = n
+                selectedIndex = n.num
+        if (selected == False):
+            print("No save file to delete")
+            return False
+        os.remove("save-"+str(selected.num+1)+".bin.bak")
+        os.remove("save-"+str(selected.num+1)+".bin.dat")
+        os.remove("save-"+str(selected.num+1)+".bin.dir")
+        saveFileBoxes[selectedIndex].hasSave = False
+        print("deleted save file")
+        renderSaveFiles()
+
+    
     loadedGameData = None
 
     def load():
@@ -669,7 +699,7 @@ def loadScreen(screen, currentGameData = None):
     saveBtnColor = (255,255,255) if (currentGameData != None) else (200,200,200)
     saveBtn = Button(
     "Save",
-    pos=(100, 420),
+    pos=(60, 420),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
@@ -679,7 +709,7 @@ def loadScreen(screen, currentGameData = None):
     #Check if no loads available
     loadBtn = Button(
     "Load",
-    pos=(220, 420),
+    pos=(160, 420),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
@@ -688,23 +718,32 @@ def loadScreen(screen, currentGameData = None):
 
     returnBtn = Button(
     "Return",
-    pos=(340, 420),
+    pos=(270, 420),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
     bg=(255,255,255),
     onClick=goBack)
 
+    deleteBtn = Button(
+    "Delete",
+    pos=(380, 420),
+    size=(80, 30),
+    font=14,
+    fontColor=(80,80,80),
+    bg=(255,255,255),
+    onClick=deleteSave)
+
     quitBtn = Button(
     "Quit",
-    pos=(460, 420),
+    pos=(490, 420),
     size=(80, 30),
     font=14,
     fontColor=(80,80,80),
     bg=(255,255,255),
     onClick=quitGame)
 
-    buttons = [saveBtn, loadBtn, returnBtn, quitBtn]
+    buttons = [saveBtn, loadBtn, returnBtn, quitBtn, deleteBtn]
 
     #Render Load Screen
     screen.fill((150,200,180))
