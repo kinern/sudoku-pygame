@@ -458,22 +458,6 @@ def gameScreen(screen, currentGameData = None):
             n.bgColor = n.inactiveBgColor
             n.update()
 
-
-    def loadGame():
-        savedMatrix, solutionMatrix, inputValues = load()
-        gameData = GameData(savedMatrix, solutionMatrix, inputValues)
-        renderGameData(gameData)
-
-    def load():
-        try:
-            gameData = shelve.open("save.bin") 
-            return gameData['matrix'], gameData['solutionMatrix'], gameData['inputValues']
-        except KeyError:
-            return None
-        finally:
-            gameData.close()
-        
-    
     newGameButton = Button(
     "New Game",
     pos=(10, 10),
@@ -585,7 +569,8 @@ def loadScreen(screen, currentGameData = None):
             self.selected = False
             self.num = num
             self.font = pygame.font.SysFont("Verdana", 20)
-            self.text = self.font.render("Game File "+str(num+1), 1, (80,80,80))
+            self.uiText = "Game File "+str(num+1) if hasSave else "Empty"
+            self.text = self.font.render(self.uiText, 1, (80,80,80))
             self.surface = pygame.Surface(self.size)
             self.surface.fill(bgColor)
             self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
@@ -595,6 +580,7 @@ def loadScreen(screen, currentGameData = None):
             bgColor = (255,255,255) if (self.hasSave) else (200,200,200)
             bgColor = (245, 250, 150) if (self.selected) else bgColor
             self.surface.fill(bgColor)
+            self.text = self.font.render(self.uiText, 1, (80,80,80))
             self.surface.blit(self.text, (int(self.size[0]/2)-int(self.text.get_rect().width/2), int(self.size[1]/2)-int(self.text.get_rect().height/2)))
             self.rect = pygame.Rect(self.x, self.y, self.size[0], self.size[1])
             screen.blit(self.surface, (self.x, self.y))
@@ -652,6 +638,7 @@ def loadScreen(screen, currentGameData = None):
         gameData['inputValues'] = currentGameData.inputValues
         gameData.close()
         saveFileBoxes[selectedIndex].hasSave = True
+        saveFileBoxes[selectedIndex].uiText = "Game File "+str(selected.num+1)
         print("saved data")
         renderSaveFiles()
 
@@ -669,6 +656,7 @@ def loadScreen(screen, currentGameData = None):
         os.remove("save-"+str(selected.num+1)+".bin.dat")
         os.remove("save-"+str(selected.num+1)+".bin.dir")
         saveFileBoxes[selectedIndex].hasSave = False
+        saveFileBoxes[selectedIndex].uiText = "Empty"
         print("deleted save file")
         renderSaveFiles()
 
@@ -678,8 +666,18 @@ def loadScreen(screen, currentGameData = None):
     def load():
         nonlocal localGameState
         nonlocal loadedGameData
+
+        selected = False
+        selectedIndex = 0
+        for n in saveFileBoxes:
+            if ((n.selected == True) and (n.hasSave == True)):
+                selected = n
+                selectedIndex = n.num
+        if (selected == False):
+            print("Loadable file not selected")
+            return False
         try:
-            gameData = shelve.open("save.bin") 
+            gameData = shelve.open("save-"+str(selected.num+1)+".bin") 
             loadedGameData =  GameData(gameData['matrix'], gameData['solutionMatrix'], gameData['inputValues'])
             localGameState = GameState.NEWGAME
         except KeyError:
