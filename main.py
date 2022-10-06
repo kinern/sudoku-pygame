@@ -671,8 +671,7 @@ def main(gameState):
     gameData = None
 
     #Make saves folder if it doesn't exist
-    path = Path('/saves')
-    if (not path.exists()):
+    if (not os.path.exists('saves')):
         os.mkdir('saves')
 
     running = True
