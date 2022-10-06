@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shelve
 from enum import Enum
+import time
 
 from alertBox import AlertBox
 from button import Button
@@ -464,7 +465,7 @@ def loadScreen(screen, currentGameData = None):
     #Display files with buttons
     saveFileBoxes = []
     for n in range(3):
-        fileName = "save-"+str(n+1)+".bin.dat"
+        fileName = "saves/save-"+str(n+1)+".bin.dat"
         saveFile = Path(fileName)
         if (not saveFile.is_file()):
             bgColor = (200,200,200)
@@ -472,7 +473,10 @@ def loadScreen(screen, currentGameData = None):
             newBox = saveFileBox(n,hasSave=hasSave,bgColor=bgColor)
             saveFileBoxes.append(newBox)
         else:
+            savedData = shelve.open("saves/save-"+str(n+1)+".bin") 
             newBox = saveFileBox(n)
+            newBox.uiText = "Game File "+str(n+1)+" - "+str(savedData['timestamp'])
+            savedData.close()
             saveFileBoxes.append(newBox)
     
     def clearSaveSelection():
@@ -497,13 +501,14 @@ def loadScreen(screen, currentGameData = None):
         if (selected == False):
             print("No save file selected")
             return False
-        gameData = shelve.open("save-"+str(selected.num+1)+".bin") 
+        gameData = shelve.open("saves/save-"+str(selected.num+1)+".bin") 
         gameData['matrix'] = currentGameData.gameMatrix
         gameData['solutionMatrix'] = currentGameData.solutionMatrix
         gameData['inputValues'] = currentGameData.inputValues
-        gameData.close()
+        gameData['timestamp'] = time.strftime("%Y-%m-%d %H:%M")
         saveFileBoxes[selectedIndex].hasSave = True
-        saveFileBoxes[selectedIndex].uiText = "Game File "+str(selected.num+1)
+        saveFileBoxes[selectedIndex].uiText = "Game File "+str(selected.num+1)+" - "+str(gameData['timestamp'])
+        gameData.close()
         print("saved data")
         renderSaveFiles()
 
@@ -517,9 +522,9 @@ def loadScreen(screen, currentGameData = None):
         if (selected == False):
             print("No save file to delete")
             return False
-        os.remove("save-"+str(selected.num+1)+".bin.bak")
-        os.remove("save-"+str(selected.num+1)+".bin.dat")
-        os.remove("save-"+str(selected.num+1)+".bin.dir")
+        os.remove("saves/save-"+str(selected.num+1)+".bin.bak")
+        os.remove("saves/save-"+str(selected.num+1)+".bin.dat")
+        os.remove("saves/save-"+str(selected.num+1)+".bin.dir")
         saveFileBoxes[selectedIndex].hasSave = False
         saveFileBoxes[selectedIndex].uiText = "Empty"
         print("deleted save file")
@@ -542,7 +547,7 @@ def loadScreen(screen, currentGameData = None):
             print("Loadable file not selected")
             return False
         try:
-            gameData = shelve.open("save-"+str(selected.num+1)+".bin") 
+            gameData = shelve.open("saves/save-"+str(selected.num+1)+".bin") 
             loadedGameData =  GameData(gameData['matrix'], gameData['solutionMatrix'], gameData['inputValues'])
             localGameState = GameState.NEWGAME
         except KeyError:
@@ -664,6 +669,11 @@ def main(gameState):
 
     screenHistory = []
     gameData = None
+
+    #Make saves folder if it doesn't exist
+    path = Path('/saves')
+    if (not path.exists()):
+        os.mkdir('saves')
 
     running = True
     while running:
